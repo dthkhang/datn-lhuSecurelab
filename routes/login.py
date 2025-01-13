@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from models.models_user import User_LoginRequest
 from security.validate_input import compare_and_validate
 from security.login_attemps import check_failed_login, increment_failed_login
@@ -8,7 +9,7 @@ from service.jwt.createAccessToken import create_access_token
 login_router = APIRouter()
 
 @login_router.post("/login", response_model=dict)
-async def login(request: Request, user: User_LoginRequest):  # Đối tượng user là User_LoginRequest
+async def login(request: Request, response: Response,user: User_LoginRequest):  # Đối tượng user là User_LoginRequest
     remote_addr = request.client.host  # Lấy địa chỉ IP của client
     
     # Kiểm tra xem remote_addr có bị block không
@@ -35,4 +36,16 @@ async def login(request: Request, user: User_LoginRequest):  # Đối tượng u
         username=user_from_db["username"], 
         email=user_from_db["email"]
     )
-    return {"access_token":access_token, "token_type": "bearer"}
+    response.set_cookie(
+        key="access_token", 
+        value=access_token, 
+        httponly=True,       # Chỉ truy cập qua HTTP, không qua JavaScript
+        secure=True,         # Chỉ gửi cookie qua HTTPS
+        samesite="Lax",      # SameSite policy để giảm nguy cơ CSRF
+        max_age=3600,        # Cookie tồn tại trong 1 giờ
+    )
+    
+    return JSONResponse(
+        content = {"access_token":access_token, "token_type": "bearer"},
+        status_code = 200
+    )

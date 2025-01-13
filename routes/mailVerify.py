@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from models.models_user import User_VerifyMailRequest
 from service.email.mail import send_otp_email
 from service.otp.otp import gen_otp
@@ -14,7 +15,13 @@ async def mailVerify(user: User_VerifyMailRequest):
         await send_otp_email(clean_user_data['email'],otp)
         print(otp)
         otp_key = save_temp_data({"email":clean_user_data['email'],"otp":otp}, ttl=300)
-        return {"message": "The otp code has been sent to your email", "otp_key": otp_key}
-    except: return {"error": "Sending failed"}
+        return JSONResponse(
+            content = {"message": "The otp code has been sent to your email", "otp_key": otp_key},
+            status_code = 200
+            )
+    except: raise HTTPException(
+            status_code=400, 
+            detail={"error": "Please try again."}
+        )
 
 

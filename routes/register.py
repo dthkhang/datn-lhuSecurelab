@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from models.models_user import User
 from service.database.db_user import add_user, check_user_exists
 from service.temp_stored.tempStored import get_temp_data, delete_temp_data
@@ -23,5 +24,12 @@ async def register(user: User):
         if temp_data['email'] == clean_user_data['email'] and temp_data['otp'] == clean_user_data['otp_mailVerify']:
             await add_user(user)
             delete_temp_data(user.otp_key)
-            return {"message": "User registered successfully"}
-    except: return {"error": "Please try again"}
+            return JSONResponse(
+                content = {"message": "User registered successfully"},
+                status_code = 200
+                )
+    except: raise HTTPException(
+            status_code=400, 
+            detail={"error": "Please try again."}
+        )
+    
